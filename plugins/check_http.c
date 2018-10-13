@@ -1708,7 +1708,7 @@ print_usage (void)
   printf ("%s\n", _("Usage:"));
   printf (" %s -H <vhost> | -I <IP-address> [-u <uri>] [-p <port>]\n",progname);
   printf ("       [-J <client certificate file>] [-K <private key>]\n");
-  printf ("       [-w <warn time>] [-c <critical time>] [-t <timeout>] [-L] [-E] [-a auth]\n");
+  printf ("       [-w <warn time>] [-c <critical time>] [-t <timeout>] [-L] [-E] [-x] [-a auth]\n");
   printf ("       [-b proxy_auth] [-f <ok|warning|critcal|follow|sticky|stickyport>]\n");
   printf ("       [-e <expect>] [-d string] [-s string] [-l] [-r <regex> | -R <case-insensitive regex>]\n");
   printf ("       [-P string] [-m <min_pg_size>:<max_pg_size>] [-4|-6] [-N] [-M <age>]\n");
