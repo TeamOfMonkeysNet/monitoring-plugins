@@ -120,6 +120,7 @@ int use_ssl = FALSE;
 int use_sni = FALSE;
 int verbose = FALSE;
 int show_extended_perfdata = FALSE;
+int show_condensed_output = FALSE;
 int sd;
 int min_page_len = 0;
 int max_page_len = 0;
@@ -239,6 +240,7 @@ process_arguments (int argc, char **argv)
     {"use-ipv4", no_argument, 0, '4'},
     {"use-ipv6", no_argument, 0, '6'},
     {"extended-perfdata", no_argument, 0, 'E'},
+    {"condensed-output", no_argument, 0, 'x'},
     {0, 0, 0, 0}
   };
 
@@ -259,7 +261,7 @@ process_arguments (int argc, char **argv)
   }
 
   while (1) {
-    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:f:C:J:K:nlLS::m:M:NE", longopts, &option);
+    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:f:C:J:K:nlLS::m:M:NEx", longopts, &option);
     if (c == -1 || c == EOF)
       break;
 
@@ -539,6 +541,9 @@ process_arguments (int argc, char **argv)
                   break;
     case 'E': /* show extended perfdata */
       show_extended_perfdata = TRUE;
+      break;
+    case 'x': /* show condensed output */
+      show_condensed_output = TRUE;
       break;
     }
   }
@@ -1169,12 +1174,18 @@ check_http (void)
     }
     /* server errors result in a critical state */
     else if (http_status >= 500) {
-      xasprintf (&msg, _("%s - "), status_line);
+      if (show_condensed_output)
+        xasprintf (&msg, _("%d - "), http_status);
+      else
+        xasprintf (&msg, _("%s - "), status_line);
       result = STATE_CRITICAL;
     }
     /* client errors result in a warning state */
     else if (http_status >= 400) {
-      xasprintf (&msg, _("%s - "), status_line);
+      if (show_condensed_output)
+        xasprintf (&msg, _("%d - "), http_status);
+      else
+        xasprintf (&msg, _("%s - "), status_line);
       result = max_state_alt(STATE_WARNING, result);
     }
     /* check redirected page if specified */
@@ -1184,11 +1195,17 @@ check_http (void)
         redir (header, status_line);
       else
         result = max_state_alt(onredirect, result);
-      xasprintf (&msg, _("%s - "), status_line);
+        if (show_condensed_output)
+          xasprintf (&msg, _("%d - "), http_status);
+        else
+          xasprintf (&msg, _("%s - "), status_line);
     } /* end if (http_status >= 300) */
     else {
       /* Print OK status anyway */
-      xasprintf (&msg, _("%s - "), status_line);
+      if (show_condensed_output)
+        xasprintf (&msg, _("%d - "), http_status);
+      else
+        xasprintf (&msg, _("%s - "), status_line);
     }
 
   } /* end else (server_expect_yn)  */
@@ -1282,6 +1299,11 @@ check_http (void)
            perfd_time_headers (elapsed_time_headers),
            perfd_time_firstbyte (elapsed_time_firstbyte),
            perfd_time_transfer (elapsed_time_transfer));
+  if (show_condensed_output)
+    xasprintf (&msg,
+            _("%s, %d bytes %s"),
+            msg, page_len,
+            (display_html ? "</A>" : ""));
   else
     xasprintf (&msg,
            _("%s - %d bytes in %.3f second response time %s|%s %s"),
@@ -1292,7 +1314,7 @@ check_http (void)
 
   result = max_state_alt(get_status(elapsed_time, thlds), result);
 
-  die (result, "HTTP %s: %s\n", state_text(result), msg);
+  die (result, "CheckHttp %s: %s\n", state_text(result), msg);
   /* die failed? */
   return STATE_UNKNOWN;
 }
@@ -1611,6 +1633,8 @@ print_help (void)
   printf ("    %s\n", _("Any other tags to be sent in http header. Use multiple times for additional headers"));
   printf (" %s\n", "-E, --extended-perfdata");
   printf ("    %s\n", _("Print additional performance data"));
+  printf (" %s\n", "-x, --condensed-output");
+  printf ("    %s\n", _("Print a simplified version of the output"));
   printf (" %s\n", "-L, --link");
   printf ("    %s\n", _("Wrap output in HTML link (obsoleted by urlize)"));
   printf (" %s\n", "-f, --onredirect=<ok|warning|critical|follow|sticky|stickyport>");
