@@ -227,7 +227,7 @@ process_arguments (int argc, char **argv)
     {"eregi", required_argument, 0, 'R'},
     {"linespan", no_argument, 0, 'l'},
     {"onredirect", required_argument, 0, 'f'},
-    {"max_depth", required_argument, 0, 'D'},
+    {"max-depth", required_argument, 0, 'D'},
     {"certificate", required_argument, 0, 'C'},
     {"client-cert", required_argument, 0, 'J'},
     {"private-key", required_argument, 0, 'K'},
@@ -394,7 +394,13 @@ process_arguments (int argc, char **argv)
       break;
     /* Maximum number of redirects */
     case 'D':
-      max_depth = optarg;
+      if (onredirect == STATE_DEPENDENT) {
+        max_depth = atoi (optarg);
+        if (max_depth < 1)
+          usage2 (_("Maximum redirect depth must be greater than 0"), optarg);
+        if (verbose)
+          printf(_("maximum redirect depth: %d \n"), max_depth);
+      }
       break;
     /* Note: H, I, and u must be malloc'd or will fail on redirects */
     case 'H': /* Host Name (virtual host) */
