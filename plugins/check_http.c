@@ -227,6 +227,7 @@ process_arguments (int argc, char **argv)
     {"eregi", required_argument, 0, 'R'},
     {"linespan", no_argument, 0, 'l'},
     {"onredirect", required_argument, 0, 'f'},
+    {"max-depth", required_argument, 0, 'D'},
     {"certificate", required_argument, 0, 'C'},
     {"client-cert", required_argument, 0, 'J'},
     {"private-key", required_argument, 0, 'K'},
@@ -261,7 +262,7 @@ process_arguments (int argc, char **argv)
   }
 
   while (1) {
-    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:f:C:J:K:nlLS::m:M:NEx", longopts, &option);
+    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:fD:C:J:K:nlLS::m:M:NEx", longopts, &option);
     if (c == -1 || c == EOF)
       break;
 
@@ -390,6 +391,16 @@ process_arguments (int argc, char **argv)
       else usage2 (_("Invalid onredirect option"), optarg);
       if (verbose)
         printf(_("option f:%d \n"), onredirect);
+      break;
+    /* Maximum number of redirects */
+    case 'D':
+      if (onredirect == STATE_DEPENDENT) {
+        max_depth = atoi (optarg);
+        if (max_depth < 1)
+          usage2 (_("Maximum redirect depth must be greater than 0"), optarg);
+        if (verbose)
+          printf(_("maximum redirect depth: %d \n"), max_depth);
+      }
       break;
     /* Note: H, I, and u must be malloc'd or will fail on redirects */
     case 'H': /* Host Name (virtual host) */
@@ -1640,6 +1651,8 @@ print_help (void)
   printf (" %s\n", "-f, --onredirect=<ok|warning|critical|follow|sticky|stickyport>");
   printf ("    %s\n", _("How to handle redirected pages. sticky is like follow but stick to the"));
   printf ("    %s\n", _("specified IP address. stickyport also ensures port stays the same."));
+  printf (" %s\n", "-D, --max-depth=INTEGER");
+  printf ("    %s\n", _("Maximum redirection depth. Returns STATE_WARNING if exceeded."));
   printf (" %s\n", "-m, --pagesize=INTEGER<:INTEGER>");
   printf ("    %s\n", _("Minimum page size required (bytes) : Maximum page size required (bytes)"));
 
@@ -1709,7 +1722,7 @@ print_usage (void)
   printf (" %s -H <vhost> | -I <IP-address> [-u <uri>] [-p <port>]\n",progname);
   printf ("       [-J <client certificate file>] [-K <private key>]\n");
   printf ("       [-w <warn time>] [-c <critical time>] [-t <timeout>] [-L] [-E] [-x] [-a auth]\n");
-  printf ("       [-b proxy_auth] [-f <ok|warning|critcal|follow|sticky|stickyport>]\n");
+  printf ("       [-b proxy_auth] [-f <ok|warning|critcal|follow|sticky|stickyport>] [-D <max_depth>]\n");
   printf ("       [-e <expect>] [-d string] [-s string] [-l] [-r <regex> | -R <case-insensitive regex>]\n");
   printf ("       [-P string] [-m <min_pg_size>:<max_pg_size>] [-4|-6] [-N] [-M <age>]\n");
   printf ("       [-A string] [-k string] [-S <version>] [--sni] [-C <warn_age>[,<crit_age>]]\n");
