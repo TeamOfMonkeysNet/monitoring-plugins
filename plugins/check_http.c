@@ -262,7 +262,7 @@ process_arguments (int argc, char **argv)
   }
 
   while (1) {
-    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:fD:C:J:K:nlLS::m:M:NEx", longopts, &option);
+    c = getopt_long (argc, argv, "Vvh46t:c:w:A:k:H:P:j:T:I:a:b:d:e:p:s:R:r:u:f:D:C:J:K:nlLS::m:M:NEx", longopts, &option);
     if (c == -1 || c == EOF)
       break;
 
