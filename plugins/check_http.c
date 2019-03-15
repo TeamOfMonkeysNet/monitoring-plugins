@@ -1162,8 +1162,13 @@ check_http (void)
   /* Bypass normal status line check if server_expect was set by user and not default */
   /* NOTE: After this if/else block msg *MUST* be an asprintf-allocated string */
   if ( server_expect_yn  )  {
-    xasprintf (&msg,
-              _("Status line output matched \"%s\" - "), server_expect);
+    // xasprintf (&msg,
+    //           _("Status line output matched \"%s\" - "), server_expect);
+    /* Print OK status anyway */
+    if (show_condensed_output)
+      xasprintf (&msg, _("%d - "), http_status);
+    else
+      xasprintf (&msg, _("%s - "), status_line);
     if (verbose)
       printf ("%s\n",msg);
   }
