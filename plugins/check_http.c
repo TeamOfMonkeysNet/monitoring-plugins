@@ -1162,8 +1162,13 @@ check_http (void)
   /* Bypass normal status line check if server_expect was set by user and not default */
   /* NOTE: After this if/else block msg *MUST* be an asprintf-allocated string */
   if ( server_expect_yn  )  {
-    xasprintf (&msg,
-              _("Status line output matched \"%s\" - "), server_expect);
+    // xasprintf (&msg,
+    //           _("Status line output matched \"%s\" - "), server_expect);
+    /* Print OK status anyway */
+    if (show_condensed_output)
+      xasprintf (&msg, _("%d - "), http_status);
+    else
+      xasprintf (&msg, _("%s - "), status_line);
     if (verbose)
       printf ("%s\n",msg);
   }
@@ -1722,7 +1727,7 @@ print_usage (void)
   printf (" %s -H <vhost> | -I <IP-address> [-u <uri>] [-p <port>]\n",progname);
   printf ("       [-J <client certificate file>] [-K <private key>]\n");
   printf ("       [-w <warn time>] [-c <critical time>] [-t <timeout>] [-L] [-E] [-x] [-a auth]\n");
-  printf ("       [-b proxy_auth] [-f <ok|warning|critcal|follow|sticky|stickyport>] [-D <max_depth>]\n");
+  printf ("       [-b proxy_auth] [-f <ok|warning|critical|follow|sticky|stickyport>] [-D <max_depth>]\n");
   printf ("       [-e <expect>] [-d string] [-s string] [-l] [-r <regex> | -R <case-insensitive regex>]\n");
   printf ("       [-P string] [-m <min_pg_size>:<max_pg_size>] [-4|-6] [-N] [-M <age>]\n");
   printf ("       [-A string] [-k string] [-S <version>] [--sni] [-C <warn_age>[,<crit_age>]]\n");
