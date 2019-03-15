@@ -1159,72 +1159,70 @@ check_http (void)
     die (STATE_CRITICAL, "HTTP CRITICAL - %s", msg);
   }
 
-  /* Bypass normal status line check if server_expect was set by user and not default */
-  /* NOTE: After this if/else block msg *MUST* be an asprintf-allocated string */
+  /* Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF */
+  /* HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT */
+  /* Status-Code = 3 DIGITS */
+
+  status_code = strchr (status_line, ' ') + sizeof (char);
+  if (strspn (status_code, "1234567890") != 3)
+    die (STATE_CRITICAL, _("HTTP CRITICAL: Invalid Status Line (%s)\n"), status_line);
+
+  http_status = atoi (status_code);
+
+  /* check the return code */
+
   if ( server_expect_yn  )  {
+    /* Bypass normal status line check if server_expect was set by user and not default */
+    /* NOTE: After this if/else block msg *MUST* be an asprintf-allocated string */
     // xasprintf (&msg,
     //           _("Status line output matched \"%s\" - "), server_expect);
+    /* Print normal status output, TODO: add a command-line param? */
+    if (show_condensed_output)
+      xasprintf (&msg, _("%d - "), http_status);
+    else
+      xasprintf (&msg, _("%s - "), status_line);
+  }
+  else if (http_status >= 600 || http_status < 100) {
+    die (STATE_CRITICAL, _("HTTP CRITICAL: Invalid Status (%s)\n"), status_line);
+  }
+  /* server errors result in a critical state */
+  else if (http_status >= 500) {
+    if (show_condensed_output)
+      xasprintf (&msg, _("%d - "), http_status);
+    else
+      xasprintf (&msg, _("%s - "), status_line);
+    result = STATE_CRITICAL;
+  }
+  /* client errors result in a warning state */
+  else if (http_status >= 400) {
+    if (show_condensed_output)
+      xasprintf (&msg, _("%d - "), http_status);
+    else
+      xasprintf (&msg, _("%s - "), status_line);
+    result = max_state_alt(STATE_WARNING, result);
+  }
+  /* check redirected page if specified */
+  else if (http_status >= 300) {
+
+    if (onredirect == STATE_DEPENDENT)
+      redir (header, status_line);
+    else
+      result = max_state_alt(onredirect, result);
+      if (show_condensed_output)
+        xasprintf (&msg, _("%d - "), http_status);
+      else
+        xasprintf (&msg, _("%s - "), status_line);
+  } /* end if (http_status >= 300) */
+  else {
     /* Print OK status anyway */
     if (show_condensed_output)
       xasprintf (&msg, _("%d - "), http_status);
     else
       xasprintf (&msg, _("%s - "), status_line);
-    if (verbose)
-      printf ("%s\n",msg);
   }
-  else {
-    /* Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF */
-    /* HTTP-Version   = "HTTP" "/" 1*DIGIT "." 1*DIGIT */
-    /* Status-Code = 3 DIGITS */
 
-    status_code = strchr (status_line, ' ') + sizeof (char);
-    if (strspn (status_code, "1234567890") != 3)
-      die (STATE_CRITICAL, _("HTTP CRITICAL: Invalid Status Line (%s)\n"), status_line);
-
-    http_status = atoi (status_code);
-
-    /* check the return code */
-
-    if (http_status >= 600 || http_status < 100) {
-      die (STATE_CRITICAL, _("HTTP CRITICAL: Invalid Status (%s)\n"), status_line);
-    }
-    /* server errors result in a critical state */
-    else if (http_status >= 500) {
-      if (show_condensed_output)
-        xasprintf (&msg, _("%d - "), http_status);
-      else
-        xasprintf (&msg, _("%s - "), status_line);
-      result = STATE_CRITICAL;
-    }
-    /* client errors result in a warning state */
-    else if (http_status >= 400) {
-      if (show_condensed_output)
-        xasprintf (&msg, _("%d - "), http_status);
-      else
-        xasprintf (&msg, _("%s - "), status_line);
-      result = max_state_alt(STATE_WARNING, result);
-    }
-    /* check redirected page if specified */
-    else if (http_status >= 300) {
-
-      if (onredirect == STATE_DEPENDENT)
-        redir (header, status_line);
-      else
-        result = max_state_alt(onredirect, result);
-        if (show_condensed_output)
-          xasprintf (&msg, _("%d - "), http_status);
-        else
-          xasprintf (&msg, _("%s - "), status_line);
-    } /* end if (http_status >= 300) */
-    else {
-      /* Print OK status anyway */
-      if (show_condensed_output)
-        xasprintf (&msg, _("%d - "), http_status);
-      else
-        xasprintf (&msg, _("%s - "), status_line);
-    }
-
-  } /* end else (server_expect_yn)  */
+  if (verbose)
+    printf ("%s\n",msg);
 
   /* reset the alarm - must be called *after* redir or we'll never die on redirects! */
   alarm (0);
