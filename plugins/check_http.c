@@ -41,6 +41,7 @@ const char *email = "devel@monitoring-plugins.org";
 #include "netutils.h"
 #include "utils.h"
 #include "base64.h"
+#include "json.h"
 #include <ctype.h>
 
 #define STICKY_NONE 0
