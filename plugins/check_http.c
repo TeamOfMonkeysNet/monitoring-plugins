@@ -916,19 +916,27 @@ check_http (void)
   int page_len = 0;
   int result = STATE_OK;
   char *force_host_header = NULL;
+  struct sockaddr_in peer;
+  int peer_len = sizeof(peer);
 
   /* try to connect to the host at the given port number */
   gettimeofday (&tv_temp, NULL);
   if (my_tcp_connect (server_address, server_port, &sd) != STATE_OK)
-    die (STATE_CRITICAL, _("HTTP CRITICAL - Unable to open TCP socket\n"));
+    die (STATE_CRITICAL, _("CheckHttp CRITICAL: Unable to open TCP socket\n"));
+
+  /* get the actual/resolved remote IP address */
+  if (getpeername(sd, &peer, &peer_len) == -1)
+    die (STATE_CRITICAL, _("CheckHttp CRITICAL: Unable to get peer address\n"));
+  if (verbose) printf("Peer address: %s\n", inet_ntoa(peer.sin_addr));
+
   microsec_connect = deltime (tv_temp);
 
-    /* if we are called with the -I option, the -j method is CONNECT and */
-    /* we received -S for SSL, then we tunnel the request through a proxy*/
-    /* @20100414, public[at]frank4dd.com, http://www.frank4dd.com/howto  */
+  /* if we are called with the -I option, the -j method is CONNECT and */
+  /* we received -S for SSL, then we tunnel the request through a proxy*/
+  /* @20100414, public[at]frank4dd.com, http://www.frank4dd.com/howto  */
 
-    if ( server_address != NULL && strcmp(http_method, "CONNECT") == 0
-      && host_name != NULL && use_ssl == TRUE) {
+  if ( server_address != NULL && strcmp(http_method, "CONNECT") == 0
+    && host_name != NULL && use_ssl == TRUE) {
 
     if (verbose) printf ("Entering CONNECT tunnel mode with proxy %s:%d to dst %s:%d\n", server_address, server_port, host_name, HTTPS_PORT);
     asprintf (&buf, "%s %s:%d HTTP/1.1\r\n%s\r\n", http_method, host_name, HTTPS_PORT, user_agent);
@@ -1083,13 +1091,13 @@ check_http (void)
       if ( sslerr == SSL_ERROR_SSL ) {
         die (STATE_WARNING, _("HTTP WARNING - Client Certificate Required\n"));
       } else {
-        die (STATE_CRITICAL, _("HTTP CRITICAL - Error on receive\n"));
+        die (STATE_CRITICAL, _("CheckHttp CRITICAL: Error on receive\n"));
       }
     }
     else {
     */
 #endif
-      die (STATE_CRITICAL, _("HTTP CRITICAL - Error on receive\n"));
+      die (STATE_CRITICAL, _("CheckHttp CRITICAL: Error on receive\n"));
 #ifdef HAVE_SSL
       /* XXX
     }
@@ -1099,7 +1107,7 @@ check_http (void)
 
   /* return a CRITICAL status if we couldn't read any data */
   if (pagesize == (size_t) 0)
-    die (STATE_CRITICAL, _("HTTP CRITICAL - No data received from host\n"));
+    die (STATE_CRITICAL, _("CheckHttp CRITICAL: No data received from host\n"));
 
   /* close the connection */
   if (sd) close(sd);
@@ -1156,7 +1164,7 @@ check_http (void)
       xasprintf (&msg,
                 _("Invalid HTTP response received from host on port %d: %s\n"),
                 server_port, status_line);
-    die (STATE_CRITICAL, "HTTP CRITICAL - %s", msg);
+    die (STATE_CRITICAL, "CheckHttp CRITICAL: %s", msg);
   }
 
   /* Status-Line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF */
