@@ -925,6 +925,8 @@ check_http (void)
   char *force_host_header = NULL;
   struct sockaddr_in peer;
   int peer_len = sizeof(peer);
+  struct sockaddr_in addr;
+  int addr_len = sizeof(addr);
   json_object *jobj = json_object_new_object();
 
   /* try to connect to the host at the given port number */
@@ -936,6 +938,10 @@ check_http (void)
   if (getpeername(sd, &peer, &peer_len) == -1)
     die (STATE_CRITICAL, _("CheckHttp CRITICAL: Unable to get peer address\n"));
   if (verbose) printf("Peer address: %s\n", inet_ntoa(peer.sin_addr));
+  
+  if (getsockname(sd, &addr, &addr_len) == -1)
+    die (STATE_CRITICAL, _("CheckHttp CRITICAL: Unable to get current address\n"));
+  if (verbose) printf("Current address: %s\n", inet_ntoa(addr.sin_addr));
 
   microsec_connect = deltime (tv_temp);
 
@@ -1347,7 +1353,8 @@ check_http (void)
   if (json_output) {
     json_object *jmsg = json_object_new_string(msg);
     json_object *jstate = json_object_new_string(state_text(result));
-    json_object *jpeername = json_object_new_string(inet_ntoa(peer.sin_addr));
+    json_object *jremote_addr = json_object_new_string(inet_ntoa(peer.sin_addr));
+    json_object *jlocal_addr = json_object_new_string(inet_ntoa(addr.sin_addr));
     json_object *jpage_len = json_object_new_int(page_len);
     json_object *jelapsed_time = json_object_new_double(elapsed_time);
     json_object *jtime_connect = json_object_new_double(elapsed_time_connect);
@@ -1357,7 +1364,8 @@ check_http (void)
     json_object *jtime_transfer = json_object_new_double(elapsed_time_transfer);
     json_object_object_add(jobj,"msg", jmsg);
     json_object_object_add(jobj,"state", jstate);
-    json_object_object_add(jobj,"peername", jpeername);
+    json_object_object_add(jobj,"remote_addr", jremote_addr);
+    json_object_object_add(jobj,"local_addr", jlocal_addr);
     json_object_object_add(jobj,"page_len", jpage_len);
     json_object_object_add(jobj,"elapsed_time", jelapsed_time);
     json_object_object_add(jobj,"time_connect", jtime_connect);
