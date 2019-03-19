@@ -38,7 +38,7 @@ const char *copyright = "1999-2013";
 const char *email = "devel@monitoring-plugins.org";
 
 #include "common.h"
-#include "netutils.h"
+#include "netutils_uptime.h"
 #include "utils.h"
 #include "base64.h"
 #include "json.h"
@@ -122,6 +122,7 @@ int use_sni = FALSE;
 int verbose = FALSE;
 int show_extended_perfdata = FALSE;
 int show_condensed_output = FALSE;
+int json_output = FALSE;
 int sd;
 int min_page_len = 0;
 int max_page_len = 0;
@@ -203,7 +204,8 @@ process_arguments (int argc, char **argv)
 
   enum {
     INVERT_REGEX = CHAR_MAX + 1,
-    SNI_OPTION
+    SNI_OPTION,
+    JSON_OUTPUT
   };
 
   int option = 0;
@@ -243,6 +245,7 @@ process_arguments (int argc, char **argv)
     {"use-ipv6", no_argument, 0, '6'},
     {"extended-perfdata", no_argument, 0, 'E'},
     {"condensed-output", no_argument, 0, 'x'},
+    {"json-output", no_argument, 0, JSON_OUTPUT},
     {0, 0, 0, 0}
   };
 
@@ -556,6 +559,9 @@ process_arguments (int argc, char **argv)
       break;
     case 'x': /* show condensed output */
       show_condensed_output = TRUE;
+      break;
+    case JSON_OUTPUT:
+      json_output = TRUE;
       break;
     }
   }
@@ -919,6 +925,7 @@ check_http (void)
   char *force_host_header = NULL;
   struct sockaddr_in peer;
   int peer_len = sizeof(peer);
+  json_object *jobj = json_object_new_object();
 
   /* try to connect to the host at the given port number */
   gettimeofday (&tv_temp, NULL);
@@ -1337,7 +1344,32 @@ check_http (void)
 
   result = max_state_alt(get_status(elapsed_time, thlds), result);
 
-  die (result, "CheckHttp %s: %s\n", state_text(result), msg);
+  if (json_output) {
+    json_object *jmsg = json_object_new_string(msg);
+    json_object *jstate = json_object_new_string(state_text(result));
+    json_object *jpeername = json_object_new_string(inet_ntoa(peer.sin_addr));
+    json_object *jpage_len = json_object_new_int(page_len);
+    json_object *jelapsed_time = json_object_new_double(elapsed_time);
+    json_object *jtime_connect = json_object_new_double(elapsed_time_connect);
+    json_object *jtime_ssl = json_object_new_double(elapsed_time_ssl);
+    json_object *jtime_headers = json_object_new_double(elapsed_time_headers);
+    json_object *jtime_firstbyte = json_object_new_double(elapsed_time_firstbyte);
+    json_object *jtime_transfer = json_object_new_double(elapsed_time_transfer);
+    json_object_object_add(jobj,"msg", jmsg);
+    json_object_object_add(jobj,"state", jstate);
+    json_object_object_add(jobj,"peername", jpeername);
+    json_object_object_add(jobj,"page_len", jpage_len);
+    json_object_object_add(jobj,"elapsed_time", jelapsed_time);
+    json_object_object_add(jobj,"time_connect", jtime_connect);
+    json_object_object_add(jobj,"time_ssl", jtime_ssl);
+    json_object_object_add(jobj,"time_headers", jtime_headers);
+    json_object_object_add(jobj,"time_firstbyte", jtime_firstbyte);
+    json_object_object_add(jobj,"time_transfer", jtime_transfer);
+    die (result, "%s", json_object_to_json_string(jobj));
+  } else {
+    die (result, "CheckHttp %s: %s\n", state_text(result), msg);
+  }
+
   /* die failed? */
   return STATE_UNKNOWN;
 }
@@ -1658,6 +1690,8 @@ print_help (void)
   printf ("    %s\n", _("Print additional performance data"));
   printf (" %s\n", "-x, --condensed-output");
   printf ("    %s\n", _("Print a simplified version of the output"));
+  printf (" %s\n", "--json-output");
+  printf ("    %s\n", _("Print JSON-formatted output"));
   printf (" %s\n", "-L, --link");
   printf ("    %s\n", _("Wrap output in HTML link (obsoleted by urlize)"));
   printf (" %s\n", "-f, --onredirect=<ok|warning|critical|follow|sticky|stickyport>");
