@@ -1356,6 +1356,8 @@ check_http (void)
     json_object *jremote_addr = json_object_new_string(inet_ntoa(peer.sin_addr));
     json_object *jlocal_addr = json_object_new_string(inet_ntoa(addr.sin_addr));
     json_object *jpage_len = json_object_new_int(page_len);
+    json_object *jstatus_line = json_object_new_string(status_line);
+    json_object *jhttp_status = json_object_new_int(http_status);
     json_object *jelapsed_time = json_object_new_double(elapsed_time);
     json_object *jtime_connect = json_object_new_double(elapsed_time_connect);
     json_object *jtime_ssl = json_object_new_double(elapsed_time_ssl);
@@ -1367,6 +1369,8 @@ check_http (void)
     json_object_object_add(jobj,"remote_addr", jremote_addr);
     json_object_object_add(jobj,"local_addr", jlocal_addr);
     json_object_object_add(jobj,"page_len", jpage_len);
+    json_object_object_add(jobj,"status_line", jstatus_line);
+    json_object_object_add(jobj,"http_status", jhttp_status);
     json_object_object_add(jobj,"elapsed_time", jelapsed_time);
     json_object_object_add(jobj,"time_connect", jtime_connect);
     json_object_object_add(jobj,"time_ssl", jtime_ssl);
